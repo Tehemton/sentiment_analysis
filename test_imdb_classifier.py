@@ -70,5 +70,5 @@ if __name__ == '__main__':
 
     model = classifier.build_model()
     num_epochs = 20
-    model.fit(train_padded, train_label_final, epochs=num_epochs,
-              validation_data=(test_padded, test_label_final))
+    history = model.fit(train_padded, train_label_final, epochs=num_epochs,
+                        validation_data=(test_padded, test_label_final))
