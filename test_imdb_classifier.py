@@ -34,6 +34,7 @@ class ImdbClassifier():
         model = tf.keras.Sequential([layers.Embedding(self.vocab_size, self.embedding_dim,
                                                       input_length=self.max_length),
                                      layers.Flatten(),
+                                     layers.Dropout(0.3),
                                      layers.Dense(10, activation='relu'),
                                      layers.Dropout(0.2),
                                      layers.Dense(1, activation='sigmoid'),
