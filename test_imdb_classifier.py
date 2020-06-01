@@ -34,12 +34,11 @@ class ImdbClassifier():
         model = tf.keras.Sequential([layers.Embedding(self.vocab_size, self.embedding_dim,
                                                       input_length=self.max_length),
                                      layers.Flatten(),
-                                     layers.Dense(6, activation='leaky_relu'),
+                                     layers.Dense(10, activation='relu'),
+                                     layers.Dropout(0.2),
                                      layers.Dense(1, activation='sigmoid'),
                                      ])
-        model.compile(loss='binary_crossentropy',
-                      optimizer='adam', metrics=['accuracy'])
-        model.summary()
+
         return model
 
 
@@ -55,11 +54,11 @@ if __name__ == '__main__':
     test_label = []
 
     for s, l in train_data:
-        train_sent.append(str(s.tonumpy()))
-        train_label.append(l.tonumpy())
+        train_sent.append(str(s.numpy()))
+        train_label.append(l.numpy())
     for s, l in test_data:
-        test_sent.append(str(s.tonumpy()))
-        test_label.append(l.tonumpy())
+        test_sent.append(str(s.numpy()))
+        test_label.append(l.numpy())
 
     train_label_final = np.array(train_label)
     test_label_final = np.array(test_label)
@@ -68,7 +67,34 @@ if __name__ == '__main__':
     word_index, train_padded, test_padded = classifier.tokenize_data(
         train_sent, test_sent)
 
+    reverse_word_index = dict([(value, key)
+                               for (key, value) in word_index.items()])
+
+    def decode_review(text):
+        return ' '.join([reverse_word_index.get(i, '?') for i in text])
+
+    print(decode_review(train_padded[3]))
+    print(train_sent[3])
+
     model = classifier.build_model()
-    num_epochs = 20
+    model.compile(loss='binary_crossentropy',
+                  optimizer='adam', metrics=['accuracy'])
+    model.summary()
+    num_epochs = 10
     history = model.fit(train_padded, train_label_final, epochs=num_epochs,
                         validation_data=(test_padded, test_label_final))
+    e = model.layers[0]
+    weights = e.get_weights()[0]
+    print(weights.shape)
+
+    import io
+
+    out_v = io.open('vecs.tsv', 'w', encoding='utf-8')
+    out_m = io.open('meta.tsv', 'w', encoding='utf-8')
+    for word_num in range(1, 10000):
+        word = reverse_word_index[word_num]
+        embeddings = weights[word_num]
+        out_m.write(word + "\n")
+        out_v.write('\t'.join([str(x) for x in embeddings]) + "\n")
+    out_v.close()
+    out_m.close()
